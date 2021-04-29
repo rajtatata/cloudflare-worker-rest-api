@@ -11,7 +11,7 @@ The idea behind this package was to create a library that would be as close to e
 Begin by installing the package with npm.
 
 ```
-npm install cloudflare-worker-rest-api --save 
+npm install cloudflare-worker-rest-api --save
 ```
 
 ### Example App
@@ -23,14 +23,14 @@ For a fully working example check out this [project](https://github.com/rajtatat
 Import the package and initialize your app.
 
 ```js
-const restCfWorker = require("cloudflare-worker-rest-api")
-const app = new restCfWorker()
+const restCfWorker = require("cloudflare-worker-rest-api");
+const app = new restCfWorker();
 
 // ....
 
-addEventListener('fetch', event => {
-  event.respondWith(app.handleRequest(event.request))
-})
+addEventListener("fetch", (event) => {
+  event.respondWith(app.handleRequest(event.request));
+});
 ```
 
 In order for cloudflare to use your app, we need to call `app.handleRequest` on the fetch event listener.
@@ -42,34 +42,72 @@ The supported methods are POST, GET, DELETE, PATCH, PUT and ANY.
 ```js
 // supports middlewares
 app.use((req, res) => {
-    // do some authenticate process
-    req.isAuthenticated = true
-})
+  // do some authenticate process
+  req.isAuthenticated = true;
+});
 
 app.get("/path-here", (req, res) => {
-    // access query 
-    const { filter, page } = req.query()
+  // access query
+  const { filter, page } = req.query();
 
-    return res.send({ status: 1, message: "Hello stranger!" })
-})
+  return res.send({ status: 1, message: "Hello stranger!" });
+});
+
+// Three parameters for req.send method
+// First one is Response Data
+// Second one is Headers, by default it is set to {'content-type': 'application/json'}
+// Third one is Status Code, by default it is set to 200
+app.get("/path-here", async (req, res) => {
+  // access header
+  const contentType = await req.header("content-type");
+  if (contentType === "application/json") {
+    return res.send({ status: 1, message: "File Created!" }, 201);
+  }
+
+  return res.send(
+    "This is a string response",
+    { "content-type": "text/plain" },
+    200
+  );
+});
+
+app.get("/path-here", async (req, res) => {
+  // access header
+  const contentType = await req.header("content-type");
+  if (contentType === "application/json") {
+    return res.send({ status: 1, message: "This is a JSON response!" });
+  }
+
+  return res.send("This is a string response", {
+    "content-type": "text/plain",
+  });
+});
 
 app.post("/path-here", async (req, res) => {
-    // access body
-    const { username } = await req.body()
+  // access body
+  const { username } = await req.body();
 
-    if (!req.isAuthenticated) {
-        // supports status code
-        return res.send({ status: 1, message: "Bro, you not supposed to be here!" }, 401)
-    }
-    return res.send({ status: 1, message: "Hello stranger, why are you still here!" })
-})
+  if (!req.isAuthenticated) {
+    // supports status code
+    return res.send(
+      // undefined to send default headers
+      { status: 1, message: "Bro, you not supposed to be here!" },
+      undefined,
+      401
+    );
+  }
+  return res.send({
+    status: 1,
+    message: "Hello stranger, why are you still here!",
+  });
+});
 
 // supports path params
 app.delete("/item/:itemId", (req, res) => {
-    const { itemId } = req.params
+  const { itemId } = req.params;
 
-    return res.send({ status: 1, message: `Oh no, you deleted item ${itemId}` })
-})
+  return res.send({ status: 1, message: `Oh no, you deleted item ${itemId}` });
+});
 ```
 
 ### Routing
@@ -78,32 +116,32 @@ The package also supports routers, if you want to divide your code in multiple f
 
 ```js
 // ./routers/auth.js
-const restCfWorker = require('cloudflare-worker-rest-api')
+const restCfWorker = require("cloudflare-worker-rest-api");
 
-const router = new restCfWorker()
+const router = new restCfWorker();
 
-router.post('/login', (req, res) => {
-    return res.send({ status: 1, message: "Successfully logged in!" })
-})
+router.post("/login", (req, res) => {
+  return res.send({ status: 1, message: "Successfully logged in!" });
+});
 
 // export the router
-module.exports = router 
+module.exports = router;
 ```
 
 Then you can call your router file in your index file
 
 ```js
-const restCfWorker = require("cloudflare-worker-rest-api")
-const authRouter = require("./routers/auth.js")
+const restCfWorker = require("cloudflare-worker-rest-api");
+const authRouter = require("./routers/auth.js");
 
-const app = new restCfWorker()
+const app = new restCfWorker();
 
 // use router
-app.use("/auth", authRouter)
+app.use("/auth", authRouter);
 
-addEventListener('fetch', event => {
-  event.respondWith(app.handleRequest(event.request))
-})
+addEventListener("fetch", (event) => {
+  event.respondWith(app.handleRequest(event.request));
+});
 ```
 
 The login route now would be `POST /auth/login`
